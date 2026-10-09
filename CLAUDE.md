@@ -6,20 +6,20 @@ tienda: alta de productos, ventas con descuentos e IVA, cotizaciones, alertas de
 bajo, más vendidos y persistencia en JSON. Es un **reto de refactorización**: el código
 funciona pero tiene mala calidad; el objetivo es mejorarlo sin cambiar su comportamiento.
 Estado actual: refactorizado (7 refactorizaciones documentadas en `docs/bitacora.md`);
-`pytest` 20 passed y `ruff check src` en 0 errores.
+`pytest` 56 passed (20 originales + 36 de casos límite) y `ruff check src` en 0 errores.
 
 ## Estructura
 - `src/gestor.py` — lógica de productos y ventas (estado global: `INVENTARIO`, `VENTAS`, ...)
 - `src/almacen.py` — carga/guardado en JSON
 - `src/reportes.py` — reportes e indicadores
 - `src/main.py` — menú interactivo de consola
-- `tests/` — suite pytest de caja negra (solo lectura)
+- `tests/` — suite pytest de caja negra; los 3 archivos originales son de solo lectura y `test_casos_edge.py` (añadido) fija los casos límite
 - `docs/` — `bitacora.md`, `reflexion.md` y `evidencia/` (salidas de pytest/ruff)
 
 ## Comandos
 ```bash
 source .venv/bin/activate        # entorno virtual (ya creado; pip install -r requirements.txt)
-pytest                           # TODOS deben pasar (20 tests)
+pytest                           # TODOS deben pasar (56 tests: 20 originales + 36 de casos límite)
 ruff check src                   # debe terminar en 0 errores
 ruff check src --fix             # solo para arreglos triviales; revisar el diff
 cd src && python main.py         # prueba manual (la opción 8 sobrescribe datos_ejemplo.json)
@@ -36,7 +36,7 @@ cd src && python main.py         # prueba manual (la opción 8 sobrescribe datos
 - No agregar estado global nuevo; no agregar dependencias.
 
 ## Restricciones (no negociables)
-1. **No modificar `tests/` ni `pyproject.toml`**, ni "ajustar" tests para que pasen.
+1. **No modificar los tests originales ni `pyproject.toml`**, ni "ajustar" tests para que pasen. Solo se añadió `tests/test_casos_edge.py` (tests de caracterización que también pasan contra el código original).
 2. **Conservar los nombres `agregarProducto` y `buscarProducto`** (los usan los tests).
 3. El comportamiento observable debe quedar **idéntico**: mismos valores de retorno,
    mensajes de `ultimo_error`, formato de tickets/reportes y redondeos.
@@ -103,5 +103,6 @@ acotada (un solo archivo o tema) → **Restricciones críticas** (lo que no debe
   prompt pide que la IA escriba y ejecute esa verificación, y en R7 es obligatoria por no existir tests de `main.py`.
 - **Tras R4:** Claude no mostró el mapa de renombres antes de aplicarlo → para cambios masivos, pedir el mapa como
   paso aparte y aprobarlo antes de editar.
+- **Cierre del reto (tests):** se añadió `tests/test_casos_edge.py` para fijar los casos límite descubiertos; cualquier refactorización posterior debe mantenerlos en verde.
 - **Cierre del reto:** se incorporaron a este archivo los ejemplos, la guía de verificación sin tests y la plantilla de
   prompt de arriba, con lo aprendido en las 7 refactorizaciones.

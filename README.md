@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 ## Ejecutar los tests
 ```bash
-pytest                              # 20 tests, todos deben pasar
+pytest                              # 56 tests (20 originales + 36 de casos límite), todos deben pasar
 ```
 
 ## Ejecutar el linter
@@ -55,7 +55,7 @@ La opción 8 ("Guardar y salir") escribe `datos_ejemplo.json`; si solo vas a pro
 │   ├── almacen.py            # Carga y guardado de datos (JSON)
 │   ├── reportes.py           # Reportes e indicadores
 │   └── main.py               # Menú interactivo de consola
-├── tests/                    # Suite pytest (sin modificar)
+├── tests/                    # Suite pytest (3 archivos originales sin modificar + test_casos_edge.py)
 └── docs/
     ├── bitacora.md           # Registro de cada refactorización (prompts, cambios, justificación, tests)
     ├── reflexion.md          # Aprendizajes y conclusiones
@@ -66,7 +66,7 @@ La opción 8 ("Guardar y salir") escribe `datos_ejemplo.json`; si solo vas a pro
 | Métrica | Original | Final |
 |---|---|---|
 | Errores de `ruff check src` | 20 | **0** |
-| Tests | 20 passed | 20 passed (tras cada refactorización) |
+| Tests | 20 passed | 56 passed (20 originales + 36 de casos límite); los 20 originales pasaron tras cada refactorización |
 | Complejidad ciclomática máxima | 17 (`menu`) | 5 |
 
 El programa final produce la misma salida y el mismo JSON que el código original (verificado con una sesión
@@ -74,6 +74,6 @@ simulada del menú). Detalle completo en [`docs/bitacora.md`](docs/bitacora.md) 
 reflexión en [`docs/reflexion.md`](docs/reflexion.md).
 
 ## Reglas del reto
-- No se modifican `tests/` ni `pyproject.toml`.
+- No se modifican los tests originales ni `pyproject.toml` (solo se agrega `tests/test_casos_edge.py`).
 - `agregarProducto` y `buscarProducto` conservan su nombre porque los tests los usan.
 - El comportamiento observable del programa se mantiene idéntico.

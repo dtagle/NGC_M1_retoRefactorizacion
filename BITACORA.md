@@ -21,6 +21,8 @@ diagnóstico en [`docs/evidencia/01_diagnostico.md`](docs/evidencia/01_diagnosti
 | 7  | Extrae un handler por opción de `menu()` con despacho por diccionario, conservando textos, prompts y bugs conocidos; verifica con una sesión simulada contra la versión anterior. Plan mode primero. | 8 handlers, 2 auxiliares y el diccionario `OPCIONES`. | Elimina el último C901 (complejidad 17 → 5) y facilita agregar opciones. | Sí: 20 passed; ruff 6 → 5; salida y JSON idénticos |
 | —  | Limpieza final: `ruff check src --fix` (cabecera `coding` obsoleta y orden de imports). | 4 líneas eliminadas y imports ordenados. | Cumple el requisito de linting sin errores. | Sí: 20 passed; **ruff 0 errores**; salida idéntica al código original |
 
+> Se agregaron además 36 tests de casos límite en `tests/test_casos_edge.py` (56 passed; también pasan contra el código original; 7/7 mutaciones detectadas) — ver [`docs/bitacora.md`](docs/bitacora.md#tests-adicionales-de-casos-límite-testsest_casos_edgepy).
+>
 > Resultado global: `ruff check src` pasó de 20 errores a 0; complejidad máxima de 17 a 5; `tests/` y
 > `pyproject.toml` sin cambios; el programa final produce la misma salida y el mismo JSON que el código original.
 

@@ -582,3 +582,34 @@ plan previo + verificación de equivalencia*, usando plan mode cuando el cambio 
 | R4: mi primera comparación del menú contra la versión anterior no valía (ruta de Python mal armada y luego modo `-I` que impide importar los módulos) | Salida idéntica pero con un traceback en ambas | Se rehízo con ruta absoluta y sin `-I`; la sesión final recorrió las 8 opciones. |
 | R5: posible diferencia teórica por `RecursionError` al pasar de `except Exception` a `except ValueError` | Revisión del diff | Se intentó reproducir con un JSON anidado 100 000 niveles: en este Python ambas versiones se comportan igual; se documentó como matiz no reproducible. |
 | R7: el primer script de entrada de Claude quedó desalineado con los prompts | Lo reconoció en su resumen | Lo rehízo alineado; además se repitió la verificación con la sesión de R4 y se contó que recorriera `Opcion no valida`, `Eso no es un numero` y `Descuento`. |
+
+---
+
+## Tests adicionales de casos límite (`tests/test_casos_edge.py`)
+
+**Motivo:** la suite original (20 tests) no cubre varios comportamientos que se descubrieron al refactorizar, y
+`main.py` solo se pudo verificar con una sesión simulada. Para que cualquier cambio futuro los conserve, se agregó
+un archivo **nuevo** de tests de caracterización, sin modificar los 3 archivos originales ni `pyproject.toml`.
+
+**Qué fijan (36 tests):** umbrales de descuento inclusivos (499.99 / 500 / 999.99 / 1000); `cotizar` **no** aplica el
+descuento VIP pero la venta sí (611.61 vs 598.73); VIP solo con prefijo `VIP` en mayúsculas y compra > 200 estricta;
+orden y mensaje de cada validación de venta; una venta fallida no consume folio ni stock; `cotizar` valida distinto
+que `registrar_venta` (no revisa código vacío ni stock); ticket con y sin línea de descuento y claves de la venta;
+`actualizar_stock` y `buscarProducto`; `mas_vendidos` con empates, `n=0` y `n` mayor al total; stock bajo estricto;
+reportes vacíos, formato `$23.2` e `imprimir == regresar`; `cargar_datos` que reemplaza el estado en el sitio y
+continúa el folio, archivos corruptos (mal formado, vacío, no UTF-8), `KeyError` por claves faltantes (comportamiento
+actual) y formato del JSON guardado (`indent=2`, `ensure_ascii=False`).
+
+**Validación de los tests:**
+1. Pasan contra el código **actual** (56 passed) y contra el código **original** del reto en `7d67b8b` (56 passed): no
+   inventan comportamiento, lo describen ([`T1_pytest_actual.txt`](evidencia/T1_pytest_actual.txt),
+   [`T1_pytest_contra_original.txt`](evidencia/T1_pytest_contra_original.txt)).
+2. Detectan regresiones: se aplicaron 7 mutaciones en una copia fuera del repo (cambiar `>=` por `>`, aplicar VIP en
+   `cotizar`, `<` por `<=` en stock bajo, `ValueError` por `JSONDecodeError`, quitar `reverse=True`, etc.) y **las 7
+   hicieron fallar al menos un test** ([`T1_mutaciones.txt`](evidencia/T1_mutaciones.txt)).
+
+**Intento fallido:** mis dos primeras expectativas aritméticas estaban mal (esperé el 5 % de descuento donde un
+subtotal de 1000 ya cae en el 10 %); fallaron **igual** contra el código original y el actual, lo que mostró que el
+error era del test y no de la refactorización, y se corrigieron.
+
+**Resultado:** `pytest` → **56 passed**; `ruff check src` → 0 errores.
