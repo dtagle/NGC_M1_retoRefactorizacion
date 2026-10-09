@@ -1,0 +1,203 @@
+Bienvenido al gestor de la tienda La Esquina
+Datos cargados de datos_ejemplo.json
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo: Nombre: Precio: Eso no es un numero, intenta de nuevo.
+Precio: Stock inicial: Producto agregado.
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo: Nombre: Precio: Stock inicial: Error: el producto ya existe
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo del producto: Cantidad: Codigo de cliente (enter si no tiene): TIENDA LA ESQUINA
+----------------------------
+Folio: 1
+Café de grano 500g x3
+Subtotal: $555.0
+Descuento: -$38.85
+IVA: $82.58
+TOTAL: $598.73
+
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo del producto: Cantidad: Codigo de cliente (enter si no tiene): Error: producto no existe
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo del producto: Cantidad: Codigo de cliente (enter si no tiene): TIENDA LA ESQUINA
+----------------------------
+Folio: 2
+Azúcar 1kg x10
+Subtotal: $325.0
+IVA: $52.0
+TOTAL: $377.0
+
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo del producto: Cantidad: Codigo de cliente (enter si no tiene): Error: stock insuficiente
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo del producto: Cantidad: Total estimado (con IVA): $429.2
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo del producto: Cantidad: Error: producto no existe
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: ===== INVENTARIO =====
+A001 | Café de grano 500g | $185.0 | stock: 9
+A002 | Azúcar 1kg | $32.5 | stock: 30
+A003 | Leche entera 1L | $26.0 | stock: 3  <-- STOCK BAJO
+B001 | Galletas de avena | $45.0 | stock: 18
+B002 | Chocolate en polvo 400g | $78.9 | stock: 2  <-- STOCK BAJO
+C001 | Jabón de tocador | $21.0 | stock: 25
+Z100 | Lapiz | $12.5 | stock: 30
+Valor total del inventario: $4585.8
+
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: ===== RESUMEN DE VENTAS =====
+Folio 1: Café de grano 500g x3 = $598.73
+Folio 2: Azúcar 1kg x10 = $377.0
+Numero de ventas: 2
+Total del dia: $975.73
+
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: A002 -> 10 unidades
+A001 -> 3 unidades
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: OJO: Leche entera 1L solo tiene 3 unidades
+OJO: Chocolate en polvo 400g solo tiene 2 unidades
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Opcion no valida.
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Codigo del producto: Cantidad: Codigo de cliente (enter si no tiene): TIENDA LA ESQUINA
+----------------------------
+Folio: 3
+Chocolate en polvo 400g x1
+Subtotal: $78.9
+IVA: $12.62
+TOTAL: $91.52
+
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: OJO: Leche entera 1L solo tiene 3 unidades
+OJO: Chocolate en polvo 400g solo tiene 1 unidades
+
+1) Agregar producto
+2) Registrar venta
+3) Cotizar
+4) Reporte de inventario
+5) Resumen de ventas
+6) Mas vendidos
+7) Alertas de stock bajo
+8) Guardar y salir
+Opcion: Datos guardados. Hasta luego.
+exit 0

@@ -25,6 +25,7 @@ están en [`evidencia/`](evidencia/).
 | R4 | Renombrar símbolos y variables sin significado (snake_case, nombres descriptivos) | Renombrar | 20 passed | 10 errores (−2) |
 | R5 | `almacen.py`: `with open`, excepción específica, `update`/`extend`, type hints | Mejorar manejo de errores | 20 passed | 6 errores (−4) |
 | R6 | `reportes.py`: `sorted`, `sum`, comprehension y type hints | Simplificar / type hints | 20 passed | 6 errores (±0) |
+| R7 | `main.py`: `menu()` dividido en un handler por opción + despacho por diccionario | Extraer funciones / type hints | 20 passed | 5 errores (−1) |
 
 ---
 
@@ -422,3 +423,91 @@ el de `HEAD`, leí el script y lo ejecuté de forma independiente con el mismo r
 anterior dio la evidencia más fuerte hasta ahora con el menor esfuerzo; conviene hacerlo siempre que no haya
 tests que cubran el comportamiento. Aun así revisé el script y lo corrí por mi cuenta: la IA puede escribir una
 verificación que no pruebe lo que debe.
+
+---
+
+## R7 — `main.py`: `menu()` dividido en handlers por opción
+
+**Modo de Claude Code:** plan mode (diseño de handlers y despacho) → aprobación → ejecución.
+Plan guardado por Claude en [`R7_plan_claude.md`](evidencia/R7_plan_claude.md).
+**Capturas:** [prompt](evidencia/R7_prompt.png) · [plan](evidencia/R7_plan.png) · [resultado](evidencia/R7_resultado.png)
+
+**Prompt usado:**
+
+```
+Refactorización 7 de 7 (categoría: extraer funciones / type hints). Lee CLAUDE.md y respétalo.
+
+Contexto: en src/main.py, menu() es una función larga (C901, complejidad 17 > 10) con una cadena
+if/elif de 8 opciones que mezcla pedir datos al usuario y llamar a gestor/reportes/almacen.
+main.py NO tiene tests, así que el comportamiento observable debe quedar idéntico.
+
+Tarea (solo main.py):
+1. Extrae un handler por opción (por ejemplo _agregar_producto, _registrar_venta, _cotizar,
+   _mostrar_mas_vendidos, _mostrar_alertas_stock, ...), cada uno con type hints y docstring breve.
+2. menu() queda como bucle que imprime las opciones, lee la opción y despacha al handler (por
+   ejemplo con un diccionario {"1": handler, ...}); la opción 8 guarda y termina el bucle, y una
+   opción inválida imprime "Opcion no valida."
+3. Agrega type hints a pedir_numero y menu.
+
+Restricciones críticas (comportamiento idéntico):
+- Mismos textos de menú y de prompts, al carácter; mismo orden de preguntas al usuario.
+- int(pedir_numero(...)) se mantiene (trunca decimales); no lo "corrijas".
+- Se sigue imprimiendo "Datos cargados de <archivo>" aunque cargar_datos devuelva False
+  (es un bug conocido; NO lo arregles, solo anótalo si quieres).
+- Los mensajes de error siguen leyendo gestor.ultimo_error con el mismo formato "Error:", valor.
+- Solo la opción 8 sale del bucle; las demás vuelven al menú. Se conserva el print("") entre iteraciones.
+- No renombres funciones de otros módulos. No toques tests/ ni pyproject.toml.
+- Meta de ruff tras este paso: desaparece C901 y quedan 5 errores (4x UP009 e I001) que se
+  arreglan después con ruff --fix.
+
+Primero muéstrame el plan: lista de handlers y cómo se despachan. Cuando lo apruebe, aplícalo y
+verifica la equivalencia: en el scratchpad (fuera del repo) copia la versión anterior
+(git show HEAD:src/main.py y el resto de src/ de HEAD) y la nueva a dos carpetas con su propia
+copia de datos_ejemplo.json, ejecuta main.py en cada una con la MISMA entrada simulada por stdin
+que recorra las 8 opciones, un error de duplicado, una entrada no numérica, una opción inválida,
+una venta con cliente VIP y un producto inexistente, y compara la salida y el JSON guardado
+(ignorando la fecha). NO ejecutes main.py dentro del repo (la opción 8 sobrescribe
+datos_ejemplo.json). Ejecuta también pytest y ruff check src y muéstrame resultados y diff.
+```
+
+**Cambio realizado** (`src/main.py`):
+- Un handler por opción, cada uno con type hints y docstring: `_agregar_producto`, `_registrar_venta`,
+  `_cotizar`, `_mostrar_inventario`, `_mostrar_resumen_ventas`, `_mostrar_mas_vendidos`,
+  `_mostrar_alertas_stock`, `_guardar_y_salir`; más dos auxiliares (`_imprimir_error`, `_imprimir_menu`).
+- `OPCIONES` (diccionario constante opción → handler) para las opciones 1–7; `menu()` trata la 8 aparte
+  (guarda y sale) y una opción inválida imprime `Opcion no valida.` y vuelve al menú. `menu()` pasa de ~60
+  líneas con 8 ramas a un bucle de ~10 líneas.
+- Los `if/else` de las opciones 2, 3 y 7 pasaron a guard clauses; `pedir_numero` y `menu` con type hints.
+
+**Justificación:** cada opción del menú queda aislada y legible, agregar una opción nueva es agregar un handler
+y una entrada del diccionario (en lugar de otra rama `elif`), y desaparece el último error de complejidad
+ciclomática (C901). La lógica de negocio no se movió: los handlers solo piden datos y llaman a
+`gestor`/`reportes`/`almacen`, igual que antes.
+
+**Comportamiento conservado a propósito (hallazgos del diagnóstico que NO se corrigieron):**
+`int(pedir_numero(...))` sigue truncando decimales (3.9 → 3), y `menu()` sigue imprimiendo "Datos cargados de ..."
+aunque `cargar_datos` devuelva `False` (mensaje engañoso). Son bugs latentes que habría que arreglar en un cambio
+aparte, con tests, porque alteran lo que el usuario ve.
+
+**Verificación:** `main.py` no tiene tests, así que se verificó ejecutándolo con entrada simulada por stdin, en
+carpetas temporales (nunca dentro del repo, porque la opción 8 sobrescribe `datos_ejemplo.json`), contra la
+versión del commit anterior:
+- Verificación de Claude (203 líneas de salida): salida, código de salida y JSON guardado idénticos
+  ([`R7_claude_entrada.txt`](evidencia/R7_claude_entrada.txt), [`R7_claude_salida.txt`](evidencia/R7_claude_salida.txt)).
+  Claude reconoció que su primer script de entrada quedó desalineado con los prompts y lo rehízo. Su sesión no
+  probó el descuento VIP en una segunda venta porque la compra no alcanzaba el mínimo de $200.
+- Mi verificación independiente, con la sesión de 44 entradas de R4 (las 8 opciones, duplicado, entrada no numérica,
+  opción inválida, producto inexistente, stock insuficiente y ventas VIP con descuento): **196 líneas de salida
+  idénticas y JSON idéntico**; además la salida es byte a byte la misma que la de R4
+  ([`R7_menu_entrada.txt`](evidencia/R7_menu_entrada.txt), [`R7_menu_salida.txt`](evidencia/R7_menu_salida.txt)).
+`tests/`, `pyproject.toml` y `datos_ejemplo.json` sin cambios.
+
+**Resultado de los tests:** `pytest` → **20 passed** ([`R7_pytest.txt`](evidencia/R7_pytest.txt)).
+`ruff check src` → **5 errores** (antes 6; desaparece C901 de `menu`; quedan 4× UP009 e I001, ambos
+autocorregibles) ([`R7_ruff_resumen.txt`](evidencia/R7_ruff_resumen.txt)).
+
+**Observaciones:** donde no hay tests, la verificación debe pedirse explícitamente en el prompt y conviene
+repetirla de forma independiente; el fallo de alineación del primer script de Claude (y el mío en R4) muestra
+que las verificaciones con entrada simulada también pueden estar mal construidas y hay que comprobar que
+realmente recorrieron lo que decían recorrer (aquí: contar `Opcion no valida`, `Eso no es un numero` y
+`Descuento` en la salida).
