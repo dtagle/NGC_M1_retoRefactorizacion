@@ -21,6 +21,7 @@ están en [`evidencia/`](evidencia/).
 |----|-----------------|-----------|--------|----------------|
 | R1 | Eliminar código muerto | Código muerto | 20 passed | 17 errores (−3) |
 | R2 | Constantes con nombre y extraer descuento por volumen / cliente VIP | Extraer funciones | 20 passed | 12 errores (−5) |
+| R3 | `registrar_venta`: guard clauses y extracción de `_validar_venta`, `_crear_venta`, `_armar_ticket` | Simplificar condicionales / extraer funciones | 20 passed | 12 errores (±0) |
 
 ---
 
@@ -133,3 +134,71 @@ descuento y el C901 de `registrar_venta`) ([`R2_ruff_resumen.txt`](evidencia/R2_
 **Observaciones:** el plan de Claude decía que `ruff check src` daría "0 errores" tras esta
 refactorización; era impreciso (0 es la meta final, no de cada paso) y el propio resumen final lo
 corrigió reportando 12. Lección: indicar en el prompt la meta de ruff por paso.
+
+---
+
+## R3 — `registrar_venta`: guard clauses y extracción de funciones
+
+**Modo de Claude Code:** accept edits (el prompt pidió describir el plan en 5 líneas antes de editar,
+en lugar de usar plan mode; no generó archivo de plan, queda en la conversación).
+**Capturas:** [prompt](evidencia/R3_prompt.png) · [plan breve](evidencia/R3_plan_breve.png) · [resultado](evidencia/R3_resultado.png)
+
+**Prompt usado:**
+
+```
+Refactorización 3 de 7 (categoría: simplificar condicionales / extraer funciones). Lee CLAUDE.md y respétalo.
+
+Contexto: en src/gestor.py, registrar_venta tiene 4 niveles de if anidados para validar y
+además mezcla validación, cálculo de montos, creación del registro y armado del ticket.
+
+Tarea:
+1. Reemplaza los if anidados de validación por guard clauses (return None temprano),
+   en el MISMO orden y con los MISMOS mensajes de ultimo_error: código vacío/None ->
+   producto no existe -> cantidad inválida (None o <= 0) -> stock insuficiente.
+2. Extrae el armado del ticket a _armar_ticket(venta, hay_descuento) y la creación del
+   diccionario de la venta a una función privada, con type hints y docstring breve.
+   Si conviene, extrae también la validación a _validar_venta. Máximo 3 funciones nuevas.
+
+Restricciones críticas (comportamiento idéntico):
+- Mismos retornos: None en error (con ultimo_error), el dict venta en éxito, con las
+  mismas claves y valores; folio int desde 1; stock descontado igual; fecha igual.
+- El ticket omite la línea "Descuento" cuando el descuento es 0 y usa el mismo formato
+  (str(round(...))); no cambies ninguna cadena.
+- No cambies la aritmética (usa las constantes y funciones que ya existen).
+- No renombres variables existentes (temp2, aux, etc. se renombran en otra refactorización).
+- No toques tests/ ni pyproject.toml.
+
+Antes de editar, escribe en 5 líneas qué funciones vas a crear y qué hará cada una.
+Después aplica el cambio, ejecuta pytest y ruff check src, y muéstrame resultados y diff.
+Indica cuántos errores de ruff quedan y cuáles dependen de otras refactorizaciones.
+```
+
+**Cambio realizado** (`src/gestor.py`):
+- `_validar_venta(codigo, cantidad)`: guard clauses en el orden pedido, con los mismos mensajes de
+  `ultimo_error`; devuelve el producto o `None`.
+- `_crear_venta(folio, codigo, nombre, cantidad, montos, cliente)`: construye el dict de la venta
+  (mismas claves, redondeos y fecha).
+- `_armar_ticket(venta, hay_descuento)`: arma el ticket y omite la línea "Descuento" si no hay.
+- `registrar_venta` queda como orquestadora: valida, calcula montos (aritmética intacta), descuenta
+  stock, incrementa folio, crea la venta y le agrega el ticket. Ya no necesita `global ultimo_error`.
+
+**Justificación:** desaparecen los 4 niveles de `if` anidados (el flujo feliz queda a la vista) y
+cada responsabilidad (validar, crear el registro, formatear el ticket) se puede leer y probar por
+separado. Se respetó el orden de efectos (stock → folio → registro) y el orden de validaciones.
+
+**Verificación:** además de la suite, comparé `registrar_venta` contra la versión del commit anterior
+con **420 casos** (códigos `None`/`""`/inexistente/válidos × cantidades `None`, 0, −1, 1…41 × clientes
+`""`, `None`, `VIP`, `VIP9`, `vip`, `VI`, `Juan`), cotejando valor de retorno (sin la fecha),
+`ultimo_error`, contador de folios e inventario: **0 diferencias, 58 ventas idénticas**
+([`R3_equivalencia.py`](evidencia/R3_equivalencia.py), salida en [`R3_equivalencia.txt`](evidencia/R3_equivalencia.txt)).
+`tests/` y `pyproject.toml` sin cambios.
+
+**Resultado de los tests:** `pytest` → **20 passed** ([`R3_pytest.txt`](evidencia/R3_pytest.txt)).
+`ruff check src` → **12 errores**, sin cambio ([`R3_ruff_resumen.txt`](evidencia/R3_ruff_resumen.txt)):
+el C901 y los SIM102 de `registrar_venta` ya habían desaparecido en R2, así que el beneficio de R3 es
+de estructura y legibilidad, no de conteo de lint.
+
+**Observaciones:** Claude admitió que no comparó el detalle de ruff antes/después y que `_crear_venta`
+recibe seis parámetros (ofreció reducirlos); lo dejo así porque agrupar los montos en un dict ya
+evita una firma más larga. Prompt acotado ("máximo 3 funciones nuevas", "no renombres") evitó que se
+desbordara el alcance: las variables `temp2`/`aux`/`desc` se conservaron para R4.
