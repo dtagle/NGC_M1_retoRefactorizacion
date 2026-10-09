@@ -550,3 +550,35 @@ quedan como mejoras futuras con sus propios tests): cotización sin descuento VI
 de la venta (#25); mensaje "Datos cargados" aunque la carga falle (#23); truncado de decimales en
 `int(pedir_numero(...))` (#22); `KeyError` si faltan claves en el JSON; estado global (`INVENTARIO`, `VENTAS`,
 `ultimo_error`, `contador_ventas`), que no se eliminó para no alterar la API que usan los tests.
+
+---
+
+## Análisis de técnicas de prompting (qué funcionó mejor)
+
+No se probaron dos variantes del mismo prompt sobre la misma refactorización; la comparación es entre
+refactorizaciones con enfoques distintos, y la conclusión se apoya en lo observado en cada una:
+
+| Variación | Dónde se usó | Qué se observó |
+|---|---|---|
+| **Plan mode** antes de editar | R2, R5, R7 (y diagnóstico) | Sacó a la luz decisiones de diseño antes de tocar código: qué constantes crear (R2), por qué `ValueError` y no `JSONDecodeError` (R5), cómo despachar las opciones del menú (R7). Más lento, pero cada plan se pudo revisar y aprobar. |
+| **Plan de 5 líneas** en el propio prompt (accept edits) | R3, R6 | Suficiente para cambios acotados a un archivo; menos evidencia visual que plan mode. |
+| **Sin plan** (acotado por restricciones) | R1, R4 | R1 (cambio trivial) funcionó. En R4 Claude **no mostró** el mapa de renombres pedido antes de aplicar; las restricciones explícitas evitaron daños, pero no se pudo aprobar el mapa. |
+| **Guardrails**: "qué NO debe cambiar" con el motivo | Todas | Fue la técnica de mayor impacto: evitó `base * 1.16`, los f-strings en reportes, unificar `cotizar` con `registrar_venta` y "arreglar" bugs latentes. 0 regresiones en los 8 commits de código. |
+| **Meta de `ruff` por paso** | R4–R7 | Tras el plan de R2 que prometía 0 errores en un paso intermedio, las metas explícitas (~10, 6, 6, 5) se cumplieron exactamente y permitieron validar el avance. |
+| **Pedir a la IA su propia verificación de equivalencia** | R2 (espontánea), R6, R7 | Dio la evidencia más fuerte (96, 4545 y 203 líneas comparadas) con poco esfuerzo; aun así hubo que leer el script y repetir la verificación por separado. |
+| **Rol + contexto** ("revisor senior", "lee CLAUDE.md") | Diagnóstico y todas | El diagnóstico salió priorizado y con riesgos; destacó hallazgos que no se habían visto (cotización sin VIP, `DESCUENTO_VIP`, mensaje "Datos cargados" engañoso). |
+
+**Conclusión:** la combinación que mejor funcionó fue *alcance acotado + guardrails con motivo + meta de lint por paso +
+plan previo + verificación de equivalencia*, usando plan mode cuando el cambio tiene decisiones de diseño.
+
+## Intentos fallidos y cómo se resolvieron
+
+| Qué falló | Cómo se detectó | Resolución |
+|---|---|---|
+| R1: el primer `grep` de Claude falló por comillas/glob en zsh | Se vio en la captura de la sesión | Claude lo reintentó solo ("zsh glob issue with the quoting; retry"). |
+| R2: el plan prometía `ruff` en 0 errores en un paso intermedio | Al comparar con el resultado real (12) | El resumen final de Claude lo corrigió; desde R3 cada prompt declara la meta de `ruff` del paso. |
+| R3: no hubo plan guardado y el conteo de `ruff` no bajó | Revisión del diff y de las estadísticas | Se documentó que el C901 de `registrar_venta` ya había desaparecido en R2; el valor de R3 es estructural. |
+| R4: Claude no mostró el mapa de renombres antes de aplicar; sus nombres largos dejaron una línea de 97 caracteres (E501) | Captura de progreso y `ruff` | Corrigió la línea; se anotó la lección (pedir el mapa como paso aparte). |
+| R4: mi primera comparación del menú contra la versión anterior no valía (ruta de Python mal armada y luego modo `-I` que impide importar los módulos) | Salida idéntica pero con un traceback en ambas | Se rehízo con ruta absoluta y sin `-I`; la sesión final recorrió las 8 opciones. |
+| R5: posible diferencia teórica por `RecursionError` al pasar de `except Exception` a `except ValueError` | Revisión del diff | Se intentó reproducir con un JSON anidado 100 000 niveles: en este Python ambas versiones se comportan igual; se documentó como matiz no reproducible. |
+| R7: el primer script de entrada de Claude quedó desalineado con los prompts | Lo reconoció en su resumen | Lo rehízo alineado; además se repitió la verificación con la sesión de R4 y se contó que recorriera `Opcion no valida`, `Eso no es un numero` y `Descuento`. |
