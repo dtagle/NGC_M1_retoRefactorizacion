@@ -1,0 +1,77 @@
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/almacen.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Persistencia del gestor: carga y guardado de datos en JSON."""
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Persistencia del gestor: carga y guardado de datos en JSON."""
+  |
+
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/gestor.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Modulo principal del gestor de inventario y ventas de "La Esquina".
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Modulo principal del gestor de inventario y ventas de "La Esquina".
+  |
+
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/main.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Punto de entrada del gestor de tienda (menu interactivo en consola)."""
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Punto de entrada del gestor de tienda (menu interactivo en consola)."""
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/main.py:4:1
+   |
+ 2 |   """Punto de entrada del gestor de tienda (menu interactivo en consola)."""
+ 3 |
+ 4 | / from collections.abc import Callable
+ 5 | |
+ 6 | | import gestor
+ 7 | | import almacen
+ 8 | | import reportes
+   | |_______________^
+ 9 |
+10 |   ARCHIVO = "datos_ejemplo.json"
+   |
+help: Organize imports
+  |
+5 |
+6 + import almacen
+7 | import gestor
+  - import almacen
+8 | import reportes
+  |
+
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/reportes.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Reportes de la tienda: inventario, ventas y mas vendidos."""
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Reportes de la tienda: inventario, ventas y mas vendidos."""
+  |
+
+Found 5 errors.
+[*] 5 fixable with the `--fix` option.

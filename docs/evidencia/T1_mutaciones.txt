@@ -1,0 +1,12 @@
+Verificacion de que test_casos_edge.py detecta regresiones (mutaciones aplicadas en una copia fuera del repo).
+Linea base: 56 passed. Cada mutacion DEBE hacer fallar al menos un test.
+
+[umbral medio > en vez de >=]            -> 1 failed, 55 passed   (detectada)
+[VIP >= 200 en vez de > 200]             -> 1 failed, 55 passed   (detectada)
+[cotizar aplica VIP / unifica]           -> 21 failed, 35 passed  (detectada)
+[stock bajo <= en vez de <]              -> 1 failed, 55 passed   (detectada)
+[except JSONDecodeError en vez de ValueError] -> 1 failed, 55 passed (detectada: archivo no UTF-8)
+[mas_vendidos sin reverse=True]          -> 2 failed, 54 passed   (detectada)
+[validar stock: <= en vez de <]          -> 6 failed, 50 passed   (detectada)
+
+Resultado: 7 de 7 mutaciones detectadas.

@@ -1,0 +1,5 @@
+4	UP009	[*] utf8-encoding-declaration
+1	C901 	[ ] complex-structure
+1	I001 	[*] unsorted-imports
+Found 6 errors.
+[*] 5 fixable with the `--fix` option.
