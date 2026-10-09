@@ -4,7 +4,7 @@
 **Matrícula:** NextGencoding
 **Fecha:** 08 octubre 2026
 
-Claude Code me resultó muy útil porque me fue llevando de la mano a lo largo de las siete refactorizaciones, desde el diagnóstico hasta la limpieza final. Mi perfil es de desarrollador Java y tengo poco acercamiento a las tendencias recientes de Python, así que la herramienta me ayudó a conocer idiomas como `sorted` con `reverse=True`, las comprehensions, `with open`, `dict.get` y los type hints modernos, sin que el código perdiera trazabilidad. Como limitación práctica, mi equipo corporativo tiene la herramienta bloqueada y tuve que pedir prestada otra máquina para completar el reto.
+Claude Code me resultó muy útil porque me fue llevando de la mano a lo largo de las ocho refactorizaciones, desde el diagnóstico hasta la limpieza final. Mi perfil es de desarrollador Java y tengo poco acercamiento a las tendencias recientes de Python, así que la herramienta me ayudó a conocer idiomas como `sorted` con `reverse=True`, las comprehensions, `with open`, `dict.get` y los type hints modernos, sin que el código perdiera trazabilidad. Como limitación práctica, mi equipo corporativo tiene la herramienta bloqueada y tuve que pedir prestada otra máquina para completar el reto.
 
 Entre lo que la IA detectó y yo no había notado destaca la inconsistencia entre `cotizar` y `registrar_venta`: la cotización no aplica el descuento VIP, de modo que una cotización puede diferir del total de la venta real. Claude lo señaló en el diagnóstico y recomendó documentarlo en lugar de unificarlo, porque hacerlo habría cambiado resultados observables. También identificó por su cuenta un número mágico adicional (`DESCUENTO_VIP`) que no estaba en mi lista.
 

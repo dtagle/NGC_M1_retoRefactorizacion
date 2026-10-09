@@ -8,10 +8,11 @@ import gestor
 
 def guardar_datos(ruta: str) -> bool:
     """Guarda el inventario, las ventas y el folio actual en un JSON."""
-    datos = {}
-    datos["inventario"] = gestor.INVENTARIO
-    datos["ventas"] = gestor.VENTAS
-    datos["contador"] = gestor.contador_ventas
+    datos = {
+        "inventario": gestor.INVENTARIO,
+        "ventas": gestor.VENTAS,
+        "contador": gestor.contador_ventas,
+    }
     with open(ruta, "w", encoding="utf-8") as archivo:
         json.dump(datos, archivo, indent=2, ensure_ascii=False)
     return True

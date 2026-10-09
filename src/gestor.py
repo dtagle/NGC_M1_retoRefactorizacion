@@ -1,7 +1,8 @@
 """Modulo principal del gestor de inventario y ventas de "La Esquina".
 
-Aqui vive casi toda la logica del negocio. Historicamente este archivo
-lo fueron parchando varias personas, asi que hay de todo un poco.
+Contiene la logica de productos (alta, baja, stock y busqueda), ventas con
+descuentos e IVA, y cotizaciones. El estado vive en variables de modulo:
+INVENTARIO, VENTAS, contador_ventas y ultimo_error (motivo del ultimo fallo).
 """
 
 from datetime import datetime
@@ -28,70 +29,75 @@ contador_ventas = 0
 ultimo_error = ""
 
 
-def reiniciar_sistema():
+def _registrar_error(mensaje: str) -> None:
+    """Deja el motivo del ultimo fallo en la variable de modulo ultimo_error."""
+    global ultimo_error
+    ultimo_error = mensaje
+
+
+def reiniciar_sistema() -> None:
     """Borra todo el estado del sistema (inventario, ventas y folios)."""
-    global contador_ventas, ultimo_error
+    global contador_ventas
     INVENTARIO.clear()
     VENTAS.clear()
     contador_ventas = 0
-    ultimo_error = ""
+    _registrar_error("")
 
 
-def agregarProducto(codigo, nombre, precio, stock):
-    # valida los datos y da de alta un producto en el inventario
-    global ultimo_error
+def agregarProducto(
+    codigo: str | None, nombre: str, precio: float, stock: int
+) -> bool:
+    """Valida los datos y da de alta un producto. Regresa False si falla."""
     if codigo is None or codigo == "":
-        ultimo_error = "codigo vacio"
+        _registrar_error("codigo vacio")
         return False
     if codigo in INVENTARIO:
-        ultimo_error = "el producto ya existe"
+        _registrar_error("el producto ya existe")
         return False
     if precio <= 0:
-        ultimo_error = "precio invalido"
+        _registrar_error("precio invalido")
         return False
     if stock < 0:
-        ultimo_error = "stock invalido"
+        _registrar_error("stock invalido")
         return False
-    producto = {}
-    producto["codigo"] = codigo
-    producto["nombre"] = nombre
-    producto["precio"] = precio
-    producto["stock"] = stock
-    INVENTARIO[codigo] = producto
+    INVENTARIO[codigo] = {
+        "codigo": codigo,
+        "nombre": nombre,
+        "precio": precio,
+        "stock": stock,
+    }
     return True
 
 
-def eliminar_producto(codigo):
+def eliminar_producto(codigo: str) -> bool:
     """Quita un producto del inventario. Regresa False si no existe."""
-    global ultimo_error
     if codigo in INVENTARIO:
         del INVENTARIO[codigo]
         return True
-    ultimo_error = "producto no existe"
+    _registrar_error("producto no existe")
     return False
 
 
-def actualizar_stock(codigo, cantidad):
+def actualizar_stock(codigo: str, cantidad: int) -> bool:
     """Suma unidades al stock (o resta si la cantidad es negativa)."""
-    global ultimo_error
     if codigo not in INVENTARIO:
-        ultimo_error = "producto no existe"
+        _registrar_error("producto no existe")
         return False
     nuevo_stock = INVENTARIO[codigo]["stock"] + cantidad
     if nuevo_stock < 0:
-        ultimo_error = "el stock no puede quedar negativo"
+        _registrar_error("el stock no puede quedar negativo")
         return False
     INVENTARIO[codigo]["stock"] = nuevo_stock
     return True
 
 
-def buscarProducto(texto):
-    # busca productos cuyo nombre contenga el texto (sin importar mayusculas)
-    coincidencias = []
-    for codigo in INVENTARIO:
-        if texto.lower() in INVENTARIO[codigo]["nombre"].lower():
-            coincidencias.append(INVENTARIO[codigo])
-    return coincidencias
+def buscarProducto(texto: str) -> list[dict]:
+    """Busca productos cuyo nombre contenga el texto (sin importar mayusculas)."""
+    return [
+        producto
+        for producto in INVENTARIO.values()
+        if texto.lower() in producto["nombre"].lower()
+    ]
 
 
 def calcular_descuento_volumen(subtotal: float) -> float:
@@ -112,18 +118,17 @@ def _es_cliente_vip(cliente: str | None) -> bool:
 
 def _validar_venta(codigo: str | None, cantidad: int | None) -> dict | None:
     """Valida los datos de la venta; devuelve el producto o None con error."""
-    global ultimo_error
     if codigo is None or codigo == "":
-        ultimo_error = "codigo vacio"
+        _registrar_error("codigo vacio")
         return None
     if codigo not in INVENTARIO:
-        ultimo_error = "producto no existe"
+        _registrar_error("producto no existe")
         return None
     if cantidad is None or cantidad <= 0:
-        ultimo_error = "cantidad invalida"
+        _registrar_error("cantidad invalida")
         return None
     if INVENTARIO[codigo]["stock"] < cantidad:
-        ultimo_error = "stock insuficiente"
+        _registrar_error("stock insuficiente")
         return None
     return INVENTARIO[codigo]
 
@@ -165,21 +170,20 @@ def _armar_ticket(venta: dict, hay_descuento: bool) -> str:
     return ticket
 
 
-def registrar_venta(codigo, cantidad, cliente=""):
-    """Registra una venta completa.
+def registrar_venta(
+    codigo: str | None, cantidad: int | None, cliente: str = ""
+) -> dict | None:
+    """Registra una venta completa y regresa el registro con su ticket.
 
-    Esta funcion hace de todo: valida los datos, calcula descuentos e
-    impuestos, descuenta el stock, genera el folio, arma el ticket en
-    texto y guarda el registro en la lista de ventas. Si algo falla
-    regresa None y deja el motivo en ultimo_error.
+    Orquesta la validacion, el calculo de descuentos e IVA, el descuento de
+    stock, el folio y el ticket. Si la validacion falla regresa None y deja
+    el motivo en ultimo_error.
     """
     global contador_ventas
     producto = _validar_venta(codigo, cantidad)
     if producto is None:
         return None
-    # calculo del subtotal
     subtotal = producto["precio"] * cantidad
-    # descuentos por volumen de compra
     descuento = calcular_descuento_volumen(subtotal)
     # los clientes cuyo codigo empieza con VIP tienen un extra,
     # pero solo si su compra (ya con descuento) pasa de cierto monto
@@ -188,7 +192,6 @@ def registrar_venta(codigo, cantidad, cliente=""):
     base = subtotal - descuento
     impuesto = base * TASA_IVA
     total = round(base + impuesto, 2)
-    # descontar del inventario
     producto["stock"] = producto["stock"] - cantidad
     contador_ventas = contador_ventas + 1
     montos = {
@@ -205,14 +208,13 @@ def registrar_venta(codigo, cantidad, cliente=""):
     return venta
 
 
-def cotizar(codigo, cantidad):
+def cotizar(codigo: str, cantidad: int | None) -> float | None:
     """Calcula cuanto costaria una compra sin registrar la venta."""
-    global ultimo_error
     if codigo not in INVENTARIO:
-        ultimo_error = "producto no existe"
+        _registrar_error("producto no existe")
         return None
     if cantidad is None or cantidad <= 0:
-        ultimo_error = "cantidad invalida"
+        _registrar_error("cantidad invalida")
         return None
     subtotal = INVENTARIO[codigo]["precio"] * cantidad
     descuento = calcular_descuento_volumen(subtotal)

@@ -5,7 +5,7 @@ Aplicación de consola en Python (>= 3.10) para administrar inventario y ventas 
 tienda: alta de productos, ventas con descuentos e IVA, cotizaciones, alertas de stock
 bajo, más vendidos y persistencia en JSON. Es un **reto de refactorización**: el código
 funciona pero tiene mala calidad; el objetivo es mejorarlo sin cambiar su comportamiento.
-Estado actual: refactorizado (7 refactorizaciones documentadas en `docs/bitacora.md`);
+Estado actual: refactorizado (8 refactorizaciones documentadas en `docs/bitacora.md`);
 `pytest` 56 passed (20 originales + 36 de casos límite) y `ruff check src` en 0 errores.
 
 ## Estructura
@@ -90,7 +90,7 @@ aplica descuento VIP); corregir el `KeyError` de `cargar_datos` o el mensaje "Da
    verificación mal construida da una falsa seguridad.
 
 ## Plantilla de prompt que funcionó
-`Refactorización N de 7 (categoría). Lee CLAUDE.md.` → **Contexto** (qué smell y dónde) → **Tarea** numerada y
+`Refactorización N de M (categoría). Lee CLAUDE.md.` → **Contexto** (qué smell y dónde) → **Tarea** numerada y
 acotada (un solo archivo o tema) → **Restricciones críticas** (lo que no debe cambiar, con el motivo) →
 **Meta de ruff para este paso** → **Pide primero el plan** (plan mode o plan de 5 líneas) → **Verificación**
 (pytest, ruff, y comparación contra la versión anterior si no hay tests) → mostrar el diff.
@@ -103,6 +103,7 @@ acotada (un solo archivo o tema) → **Restricciones críticas** (lo que no debe
   prompt pide que la IA escriba y ejecute esa verificación, y en R7 es obligatoria por no existir tests de `main.py`.
 - **Tras R4:** Claude no mostró el mapa de renombres antes de aplicarlo → para cambios masivos, pedir el mapa como
   paso aparte y aprobarlo antes de editar.
+- **R8:** con los tests de casos límite ya presentes, el prompt declara su meta como `pytest 56 passed` y la verificación de equivalencia pasa a ser *adicional*.
 - **Cierre del reto (tests):** se añadió `tests/test_casos_edge.py` para fijar los casos límite descubiertos; cualquier refactorización posterior debe mantenerlos en verde.
 - **Cierre del reto:** se incorporaron a este archivo los ejemplos, la guía de verificación sin tests y la plantilla de
-  prompt de arriba, con lo aprendido en las 7 refactorizaciones.
+  prompt de arriba, con lo aprendido en las refactorizaciones R1–R7.

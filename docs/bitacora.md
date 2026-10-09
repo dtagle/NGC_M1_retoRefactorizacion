@@ -27,6 +27,7 @@ están en [`evidencia/`](evidencia/).
 | R6 | `reportes.py`: `sorted`, `sum`, comprehension y type hints | Simplificar / type hints | 20 passed | 6 errores (±0) |
 | R7 | `main.py`: `menu()` dividido en un handler por opción + despacho por diccionario | Extraer funciones / type hints | 20 passed | 5 errores (−1) |
 | — | Limpieza final con `ruff check src --fix` (cabecera `coding` obsoleta y orden de imports) | Linter automático | 20 passed | **0 errores** (−5) |
+| R8 | `gestor.py`/`almacen.py`: type hints, helper `_registrar_error`, literales, comprehension y docstrings al día (después de agregar los tests de casos límite) | Type hints / extraer funciones / comentarios obsoletos | 56 passed | 0 errores |
 
 ---
 
@@ -530,9 +531,9 @@ de lógica. Resultado: `ruff check src` → **All checks passed!** ([`99_final_r
 | Métrica | Original (`7d67b8b`) | Final |
 |---|---|---|
 | Errores de `ruff check src` | 20 | **0** |
-| Tests (`pytest`) | 20 passed | 20 passed (en cada uno de los 8 commits de código) |
+| Tests (`pytest`) | 20 passed | 56 passed (20 originales, que pasaron tras cada refactorización, + 36 de casos límite) |
 | Complejidad máxima (C901) | `menu` 17, `registrar_venta` 12 | **5** (`menu`, `agregarProducto`, `_validar_venta`) |
-| Líneas en `src/` | 429 | 483 (más docstrings, type hints, constantes y funciones pequeñas) |
+| Líneas en `src/` | 429 | 486 (más docstrings, type hints, constantes y funciones pequeñas) |
 | Código muerto | 5 elementos | 0 |
 | Números mágicos del negocio | 8 | 0 (constantes con nombre) |
 | Estilos de nombres mezclados | `contadorVentas`, `hayArchivo`, `hacer_cosa`, `temp2`, `aux`... | `snake_case` descriptivo |
@@ -560,10 +561,10 @@ refactorizaciones con enfoques distintos, y la conclusión se apoya en lo observ
 
 | Variación | Dónde se usó | Qué se observó |
 |---|---|---|
-| **Plan mode** antes de editar | R2, R5, R7 (y diagnóstico) | Sacó a la luz decisiones de diseño antes de tocar código: qué constantes crear (R2), por qué `ValueError` y no `JSONDecodeError` (R5), cómo despachar las opciones del menú (R7). Más lento, pero cada plan se pudo revisar y aprobar. |
+| **Plan mode** antes de editar | R2, R5, R7, R8 (y diagnóstico) | Sacó a la luz decisiones de diseño antes de tocar código: qué constantes crear (R2), por qué `ValueError` y no `JSONDecodeError` (R5), cómo despachar las opciones del menú (R7). Más lento, pero cada plan se pudo revisar y aprobar. |
 | **Plan de 5 líneas** en el propio prompt (accept edits) | R3, R6 | Suficiente para cambios acotados a un archivo; menos evidencia visual que plan mode. |
 | **Sin plan** (acotado por restricciones) | R1, R4 | R1 (cambio trivial) funcionó. En R4 Claude **no mostró** el mapa de renombres pedido antes de aplicar; las restricciones explícitas evitaron daños, pero no se pudo aprobar el mapa. |
-| **Guardrails**: "qué NO debe cambiar" con el motivo | Todas | Fue la técnica de mayor impacto: evitó `base * 1.16`, los f-strings en reportes, unificar `cotizar` con `registrar_venta` y "arreglar" bugs latentes. 0 regresiones en los 8 commits de código. |
+| **Guardrails**: "qué NO debe cambiar" con el motivo | Todas | Fue la técnica de mayor impacto: evitó `base * 1.16`, los f-strings en reportes, unificar `cotizar` con `registrar_venta` y "arreglar" bugs latentes. 0 regresiones en los 9 commits de código (R1–R8 y la limpieza final). |
 | **Meta de `ruff` por paso** | R4–R7 | Tras el plan de R2 que prometía 0 errores en un paso intermedio, las metas explícitas (~10, 6, 6, 5) se cumplieron exactamente y permitieron validar el avance. |
 | **Pedir a la IA su propia verificación de equivalencia** | R2 (espontánea), R6, R7 | Dio la evidencia más fuerte (96, 4545 y 203 líneas comparadas) con poco esfuerzo; aun así hubo que leer el script y repetir la verificación por separado. |
 | **Rol + contexto** ("revisor senior", "lee CLAUDE.md") | Diagnóstico y todas | El diagnóstico salió priorizado y con riesgos; destacó hallazgos que no se habían visto (cotización sin VIP, `DESCUENTO_VIP`, mensaje "Datos cargados" engañoso). |
@@ -613,3 +614,92 @@ subtotal de 1000 ya cae en el 10 %); fallaron **igual** contra el código origin
 error era del test y no de la refactorización, y se corrigieron.
 
 **Resultado:** `pytest` → **56 passed**; `ruff check src` → 0 errores.
+
+---
+
+## R8 — Smells menores de `gestor.py` (type hints, helper de error, literales, docstrings)
+
+Se hizo **después** de la limpieza final y de agregar los tests de casos límite: ahora hay 56 tests que fijan el
+comportamiento, así que se pudo tocar `gestor.py` con menos riesgo. Cubre los smells menores del diagnóstico que
+quedaban (#10, #11, #12, #16 y comentarios obsoletos).
+
+**Modo de Claude Code:** plan mode (lista de cambios por función) → aprobación → ejecución. Plan guardado en
+[`R8_plan_claude.md`](evidencia/R8_plan_claude.md).
+**Capturas:** [prompt](evidencia/R8_prompt.png) · [plan](evidencia/R8_plan.png) · [resultado](evidencia/R8_resultado.png)
+
+**Prompt usado:**
+
+```
+Refactorización 8 de 8 (categorías: type hints / extraer funciones / eliminar comentarios obsoletos). Lee CLAUDE.md y respétalo.
+
+Contexto: quedan smells menores del diagnóstico en src/gestor.py: (1) las funciones públicas no tienen
+type hints; (2) agregarProducto construye el diccionario en 5 líneas; (3) buscarProducto usa bucle con
+append; (4) el patrón "global ultimo_error; ultimo_error = ...; return ..." se repite ~12 veces;
+(5) hay docstrings/comentarios obsoletos (el docstring de registrar_venta dice que "hace de todo" y el
+docstring del módulo menciona que "lo fueron parchando varias personas"). En src/almacen.py,
+guardar_datos arma su diccionario en 4 líneas. Ahora hay 56 tests (los 3 archivos originales más
+tests/test_casos_edge.py) que fijan el comportamiento.
+
+Tarea:
+1. Type hints en TODAS las funciones públicas de gestor.py (sin cambiar nombres, p. ej.
+   cantidad: int | None, precio: float) y docstring breve donde falte.
+2. agregarProducto: construye el diccionario con un literal {...} (mismas claves y orden).
+3. buscarProducto: list comprehension sobre INVENTARIO.values() (mismo orden).
+4. Extrae un helper privado _registrar_error(mensaje) que asigne la variable GLOBAL ultimo_error
+   del módulo (con `global`), y úsalo donde se repite el patrón.
+5. Actualiza los docstrings/comentarios obsoletos para que describan el estado actual.
+6. almacen.guardar_datos: diccionario como literal.
+
+Restricciones críticas (comportamiento idéntico):
+- gestor.ultimo_error debe seguir siendo una variable de módulo que main.py, almacen.py y los tests
+  leen y escriben; el helper NO debe crear una variable local ni cambiar ese mecanismo.
+- Conserva los nombres agregarProducto y buscarProducto, el orden de validaciones y los mensajes exactos.
+- Los type hints NO agregan validaciones ni conversiones de tipos.
+- No toques ningún archivo de tests/ ni pyproject.toml.
+- Meta: pytest 56 passed y ruff check src con 0 errores.
+
+Primero muéstrame el plan (qué cambia en cada función). Cuando lo apruebe, aplícalo y verifica la
+equivalencia con la versión anterior: crea en el scratchpad (fuera del repo) un script que compare
+gestor.py actual vs `git show HEAD:src/gestor.py` con muchos escenarios (altas válidas e inválidas,
+ventas con distintos clientes/cantidades, cotizaciones, búsquedas, actualizar_stock) y que también
+compare el valor de gestor.ultimo_error tras cada operación. Ejecuta pytest y ruff check src y
+muéstrame resultados y diff.
+```
+
+**Cambio realizado:**
+- `gestor.py`: type hints en todas las funciones públicas (nombres intactos, sin validaciones ni conversiones nuevas);
+  helper `_registrar_error(mensaje)` que asigna con `global` la variable de módulo `ultimo_error` y reemplaza el patrón
+  repetido en 13 sitios (varias funciones dejan de necesitar `global`); `agregarProducto` con diccionario literal;
+  `buscarProducto` como list comprehension sobre `INVENTARIO.values()`; docstrings actualizados (se quitan
+  "lo fueron parchando varias personas" y "hace de todo") y tres comentarios triviales eliminados.
+- `almacen.py`: `guardar_datos` arma el diccionario como literal.
+
+**Justificación:** el helper concentra en un solo punto cómo se registra un error, sin cambiar el mecanismo del que
+dependen `main.py`, `almacen.py` y los tests (sigue siendo la variable de módulo `gestor.ultimo_error`); los type
+hints documentan el contrato de la API pública; los literales y la comprehension son la forma idiomática; y los
+docstrings dejan de contradecir al código. Se mantuvo a propósito el estado global (cambiarlo alteraría la API que
+usan los tests).
+
+**Detalle que Claude identificó en el plan:** con la comprehension, `texto.lower()` se evalúa por elemento, igual que en
+el bucle original, por lo que con inventario vacío y `texto=None` ninguna versión lanza error; el comportamiento se
+conserva.
+
+**Verificación:**
+- Script de Claude (143 operaciones sobre `gestor.py` anterior vs nuevo, comparando retorno sin fecha, `ultimo_error`,
+  inventario, ventas y folio tras cada una; 8 mensajes de error más el estado vacío; 16 ventas exitosas, 9 con
+  descuento; 3 excepciones idénticas): **0 diferencias**. Comparación de `guardar_datos`: JSON idéntico byte a byte
+  ([`R8_equivalencia_gestor.py`](evidencia/R8_equivalencia_gestor.py), [`.txt`](evidencia/R8_equivalencia_gestor.txt),
+  [`R8_equivalencia_almacen.py`](evidencia/R8_equivalencia_almacen.py), [`.txt`](evidencia/R8_equivalencia_almacen.txt)).
+  Comprobé que los módulos "viejos" del script eran exactamente los de `HEAD`, leí los scripts y los ejecuté por mi cuenta
+  con el mismo resultado.
+- Sesión simulada del menú contra el **código original del reto**: salida de 196 líneas y JSON guardado **idénticos**
+  ([`R8_menu_salida.txt`](evidencia/R8_menu_salida.txt)).
+- `tests/` y `pyproject.toml` sin cambios en este commit.
+
+**Resultado de los tests:** `pytest` → **56 passed** ([`R8_pytest.txt`](evidencia/R8_pytest.txt));
+`ruff check src` → **All checks passed!** ([`R8_ruff.txt`](evidencia/R8_ruff.txt)). Complejidad máxima sin cambio
+(5); líneas en `src/`: 486.
+
+**Observaciones:** con tests de caracterización ya presentes, el prompt pudo pedir una verificación "adicional" en
+lugar de "la única"; el riesgo principal (que un helper creara una variable local en lugar de modificar el global)
+estaba nombrado explícitamente en las restricciones y el plan lo resolvió con `global ultimo_error` dentro del helper.

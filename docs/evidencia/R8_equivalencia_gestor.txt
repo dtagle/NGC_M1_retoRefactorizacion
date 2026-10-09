@@ -1,0 +1,5 @@
+operaciones: 143 | diferencias: 0
+mensajes de error cubiertos: ['', 'cantidad invalida', 'codigo vacio', 'el producto ya existe', 'el stock no puede quedar negativo', 'precio invalido', 'producto no existe', 'stock insuficiente', 'stock invalido']
+ventas OK: 16 | con descuento: 9
+excepciones en ambos: 3
+claves iguales: True
