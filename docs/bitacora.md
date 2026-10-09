@@ -23,6 +23,7 @@ están en [`evidencia/`](evidencia/).
 | R2 | Constantes con nombre y extraer descuento por volumen / cliente VIP | Extraer funciones | 20 passed | 12 errores (−5) |
 | R3 | `registrar_venta`: guard clauses y extracción de `_validar_venta`, `_crear_venta`, `_armar_ticket` | Simplificar condicionales / extraer funciones | 20 passed | 12 errores (±0) |
 | R4 | Renombrar símbolos y variables sin significado (snake_case, nombres descriptivos) | Renombrar | 20 passed | 10 errores (−2) |
+| R5 | `almacen.py`: `with open`, excepción específica, `update`/`extend`, type hints | Mejorar manejo de errores | 20 passed | 6 errores (−4) |
 
 ---
 
@@ -272,3 +273,77 @@ del commit anterior: **salida idéntica y JSON guardado idéntico** (sin la fech
 línea y aplicó directamente (la captura de progreso lo muestra); funcionó porque las reglas de
 exclusión eran explícitas, pero para renombres masivos conviene pedir el mapa como paso aparte y
 aprobarlo. Además corrigió solo una línea de 97 caracteres (E501) que sus propios renombres provocaron.
+
+---
+
+## R5 — Manejo de errores y recursos en `almacen.py`
+
+**Modo de Claude Code:** plan mode (diseño y elección de la excepción) → aprobación → ejecución.
+Plan guardado por Claude en [`R5_plan_claude.md`](evidencia/R5_plan_claude.md).
+**Capturas:** [prompt](evidencia/R5_prompt.png) · [plan](evidencia/R5_plan.png) · [resultado](evidencia/R5_resultado.png)
+
+**Prompt usado:**
+
+```
+Refactorización 5 de 7 (categoría: mejorar manejo de errores). Lee CLAUDE.md y respétalo.
+
+Contexto: src/almacen.py abre archivos sin `with` (en cargar_datos el archivo se cierra a mano en
+dos sitios), usa `except Exception` genérico, copia datos elemento por elemento y hay_archivo
+usa un if/else para devolver un booleano.
+
+Tarea (solo almacen.py):
+1. Usa `with open(...)` en guardar_datos y cargar_datos; quita el modo "r" redundante.
+2. Reemplaza `except Exception` por una excepción específica (json.JSONDecodeError cubre JSON
+   mal formado; considera ValueError si también debe cubrir UnicodeDecodeError).
+3. Reemplaza los bucles de copia por INVENTARIO.update(...) y VENTAS.extend(...), manteniendo
+   clear() para mutar en el sitio (NO reasignar INVENTARIO ni VENTAS).
+4. hay_archivo debe devolver directamente os.path.exists(ruta).
+5. Agrega type hints y docstring breve a las funciones de almacen.py.
+
+Restricciones críticas (comportamiento idéntico):
+- open() debe seguir FUERA del manejo de errores de JSON: un error de permisos o de ruta debe
+  seguir propagándose igual que hoy.
+- Un JSON corrupto sigue dando ultimo_error = "archivo corrupto" y retorno False; un archivo
+  inexistente, "el archivo no existe" y False; éxito True; guardar_datos sigue devolviendo True.
+- NO "arregles" el KeyError cuando falte "inventario" o "ventas" en el JSON: cambiaría el comportamiento.
+- El formato del JSON guardado no cambia (indent=2, ensure_ascii=False, mismas claves).
+- No toques tests/ ni pyproject.toml.
+- Meta de ruff tras este paso: deben desaparecer SIM115, SIM103 y UP015 (quedarán 6 errores:
+  4x UP009, I001 y C901 de menu).
+
+Primero muéstrame el plan: qué excepción elegirás y por qué, y qué casos de error siguen
+comportándose igual. Cuando lo apruebe, aplícalo, ejecuta pytest y ruff check src y muéstrame
+resultados y diff.
+```
+
+**Cambio realizado** (`src/almacen.py`):
+- `guardar_datos` y `cargar_datos` usan `with open(...)` (se eliminan los `close()` manuales y el modo `"r"`).
+- `except Exception` → `except ValueError` (cubre `json.JSONDecodeError` y `UnicodeDecodeError`, ambas subclases);
+  `open()` queda fuera del `try`, así que los errores de ruta/permisos se propagan como antes.
+- Los bucles de copia pasan a `INVENTARIO.update(...)` y `VENTAS.extend(...)`, conservando `clear()` (mutación en el sitio).
+- `hay_archivo` devuelve directamente `os.path.exists(ruta)`; type hints y docstrings en las tres funciones.
+
+**Justificación:** `with` garantiza el cierre del archivo aunque ocurra una excepción; capturar solo
+`ValueError` evita ocultar errores ajenos al formato del archivo (antes `except Exception` se los tragaba);
+`update`/`extend` expresan la intención sin bucles; y `hay_archivo` deja de repetir un `if/else` que solo
+devolvía el booleano de su condición. El plan de Claude eligió `ValueError` y no `JSONDecodeError` porque
+con un archivo no UTF-8 el comportamiento habría pasado de devolver `False` a propagar una excepción.
+
+**Verificación:** además de la suite, comparé `almacen.py` anterior vs nuevo con **11 casos** (archivo inexistente,
+válido, sin `contador`, JSON mal formado, vacío, bytes no UTF-8, sin `inventario`, sin `ventas`, ruta que es un
+directorio, JSON anidado profundo y `guardar_datos` byte a byte), cotejando retorno o excepción, `ultimo_error`,
+inventario, ventas, folio y `hay_archivo`: **0 diferencias**, incluidas las excepciones que siguen propagándose
+(`KeyError`, `IsADirectoryError`) ([`R5_equivalencia.py`](evidencia/R5_equivalencia.py),
+[`R5_equivalencia.txt`](evidencia/R5_equivalencia.txt)). `tests/` y `pyproject.toml` sin cambios.
+
+**Resultado de los tests:** `pytest` → **20 passed** ([`R5_pytest.txt`](evidencia/R5_pytest.txt)).
+`ruff check src` → **6 errores** (antes 10; desaparecen SIM115 ×2, SIM103 y UP015; quedan 4× UP009, I001
+y C901 de `menu`) ([`R5_ruff_resumen.txt`](evidencia/R5_ruff_resumen.txt)).
+
+**Observaciones:** el prompt incluyó una lista explícita de casos que no debían cambiar y Claude la respetó
+(dejó el `KeyError` intacto). Claude señaló un matiz que yo no había considerado: `update` aceptaría un
+`"inventario"` con forma de lista de pares donde antes había un `TypeError`; no afecta a los datos que genera
+`guardar_datos`. Matiz teórico propio: `except Exception` también atrapaba `RecursionError`, que `except ValueError`
+ya no atrapa; intenté reproducirlo con un JSON anidado 100 000 niveles y en este Python ambas versiones se
+comportan igual (el JSON se carga), por lo que no es un cambio observable aquí. Como en R2, el modo de la
+barra al terminar fue `auto mode on` tras aprobar el plan.

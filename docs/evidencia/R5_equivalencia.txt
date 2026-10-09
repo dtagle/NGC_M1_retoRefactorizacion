@@ -1,0 +1,12 @@
+IGUAL    inexistente | antes: False | ahora: False
+IGUAL    valido | antes: True | ahora: True
+IGUAL    sin_contador | antes: True | ahora: True
+IGUAL    json_mal_formado | antes: False | ahora: False
+IGUAL    vacio | antes: False | ahora: False
+IGUAL    no_utf8 | antes: False | ahora: False
+IGUAL    falta_inventario | antes: EXC:KeyError | ahora: EXC:KeyError
+IGUAL    falta_ventas | antes: EXC:KeyError | ahora: EXC:KeyError
+IGUAL    directorio | antes: EXC:IsADirectoryError | ahora: EXC:IsADirectoryError
+IGUAL    anidado_profundo | antes: EXC:TypeError | ahora: EXC:TypeError
+IGUAL    guardar | antes: True | ahora: True
+casos: 11 diferencias: 0
