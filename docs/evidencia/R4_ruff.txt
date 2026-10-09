@@ -1,0 +1,136 @@
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/almacen.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Persistencia del gestor: carga y guardado de datos en JSON."""
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Persistencia del gestor: carga y guardado de datos en JSON."""
+  |
+
+SIM115 Use a context manager for opening files
+  --> src/almacen.py:16:15
+   |
+14 |     datos["ventas"] = gestor.VENTAS
+15 |     datos["contador"] = gestor.contador_ventas
+16 |     archivo = open(ruta, "w", encoding="utf-8")
+   |               ^^^^
+17 |     json.dump(datos, archivo, indent=2, ensure_ascii=False)
+18 |     archivo.close()
+   |
+
+SIM115 Use a context manager for opening files
+  --> src/almacen.py:30:15
+   |
+28 |         gestor.ultimo_error = "el archivo no existe"
+29 |         return False
+30 |     archivo = open(ruta, "r", encoding="utf-8")
+   |               ^^^^
+31 |     try:
+32 |         datos = json.load(archivo)
+   |
+
+UP015 [*] Unnecessary mode argument
+  --> src/almacen.py:30:26
+   |
+28 |         gestor.ultimo_error = "el archivo no existe"
+29 |         return False
+30 |     archivo = open(ruta, "r", encoding="utf-8")
+   |                          ^^^
+31 |     try:
+32 |         datos = json.load(archivo)
+   |
+help: Remove mode argument
+   |
+29 |         return False
+   -     archivo = open(ruta, "r", encoding="utf-8")
+30 +     archivo = open(ruta, encoding="utf-8")
+31 |     try:
+   |
+
+SIM103 Return the condition `bool(os.path.exists(ruta))` directly
+  --> src/almacen.py:50:5
+   |
+48 |   def hay_archivo(ruta):
+49 |       # checa si ya existe el archivo de datos
+50 | /     if os.path.exists(ruta):
+51 | |         return True
+52 | |     else:
+53 | |         return False
+   | |____________________^
+help: Replace with `return bool(os.path.exists(ruta))`
+
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/gestor.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Modulo principal del gestor de inventario y ventas de "La Esquina".
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Modulo principal del gestor de inventario y ventas de "La Esquina".
+  |
+
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/main.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Punto de entrada del gestor de tienda (menu interactivo en consola)."""
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Punto de entrada del gestor de tienda (menu interactivo en consola)."""
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> src/main.py:4:1
+  |
+2 |   """Punto de entrada del gestor de tienda (menu interactivo en consola)."""
+3 |
+4 | / import gestor
+5 | | import almacen
+6 | | import reportes
+  | |_______________^
+7 |
+8 |   ARCHIVO = "datos_ejemplo.json"
+  |
+help: Organize imports
+  |
+3 |
+4 + import almacen
+5 | import gestor
+  - import almacen
+6 | import reportes
+  |
+
+C901 `menu` is too complex (17 > 10)
+  --> src/main.py:21:5
+   |
+21 | def menu():
+   |     ^^^^
+22 |     print("Bienvenido al gestor de la tienda La Esquina")
+23 |     if almacen.hay_archivo(ARCHIVO):
+   |
+
+UP009 [*] UTF-8 encoding declaration is unnecessary
+ --> src/reportes.py:1:1
+  |
+1 | # -*- coding: utf-8 -*-
+  | ^^^^^^^^^^^^^^^^^^^^^^^
+2 | """Reportes de la tienda: inventario, ventas y mas vendidos."""
+  |
+help: Remove unnecessary coding comment
+  |
+  - # -*- coding: utf-8 -*-
+1 | """Reportes de la tienda: inventario, ventas y mas vendidos."""
+  |
+
+Found 10 errors.
+[*] 6 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

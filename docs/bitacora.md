@@ -22,6 +22,7 @@ están en [`evidencia/`](evidencia/).
 | R1 | Eliminar código muerto | Código muerto | 20 passed | 17 errores (−3) |
 | R2 | Constantes con nombre y extraer descuento por volumen / cliente VIP | Extraer funciones | 20 passed | 12 errores (−5) |
 | R3 | `registrar_venta`: guard clauses y extracción de `_validar_venta`, `_crear_venta`, `_armar_ticket` | Simplificar condicionales / extraer funciones | 20 passed | 12 errores (±0) |
+| R4 | Renombrar símbolos y variables sin significado (snake_case, nombres descriptivos) | Renombrar | 20 passed | 10 errores (−2) |
 
 ---
 
@@ -202,3 +203,72 @@ de estructura y legibilidad, no de conteo de lint.
 recibe seis parámetros (ofreció reducirlos); lo dejo así porque agrupar los montos en un dict ya
 evita una firma más larga. Prompt acotado ("máximo 3 funciones nuevas", "no renombres") evitó que se
 desbordara el alcance: las variables `temp2`/`aux`/`desc` se conservaron para R4.
+
+---
+
+## R4 — Renombrar símbolos y variables sin significado
+
+**Modo de Claude Code:** accept edits (se pidió grep de usos y mapa de renombres antes de aplicar).
+Claude ofreció "switch to auto mode" ante un comando con `source`; se aprobó solo esa ejecución.
+**Capturas:** [prompt](evidencia/R4_prompt.png) · [progreso](evidencia/R4_progreso.png) · [resultado](evidencia/R4_resultado.png)
+
+**Prompt usado:**
+
+```
+Refactorización 4 de 7 (categoría: renombrar para mayor claridad). Lee CLAUDE.md y respétalo.
+
+Contexto: hay nombres sin significado (temp2, aux, desc, t, s, d, f, x, k, hacer_cosa) y
+estilos mezclados (contadorVentas, hayArchivo) en src/gestor.py, src/almacen.py,
+src/reportes.py y src/main.py.
+
+Tarea: renombra a nombres descriptivos en español y snake_case, siguiendo CLAUDE.md:
+- hacer_cosa -> formatear_dinero
+- contadorVentas -> contador_ventas (gestor.py, almacen.py y donde se use)
+- hayArchivo -> hay_archivo (almacen.py y main.py)
+- variables locales sin significado (temp2, aux, desc, t, s, d, f, x, k, etc.) -> nombres que
+  describan su contenido (producto, subtotal, descuento, ticket, reporte, datos, archivo...).
+
+Reglas:
+- ANTES de renombrar cualquier símbolo público, haz grep de sus usos en src/ y tests/ y
+  renómbralo en todos los usos a la vez. Si un test lo usa, NO lo renombres y avísame.
+- NO renombres: agregarProducto, buscarProducto, INVENTARIO, VENTAS, reiniciar_sistema,
+  ultimo_error (lo usa main.py como gestor.ultimo_error), ni funciones/atributos que usen los tests.
+- No cambies lógica, aritmética, mensajes, claves de diccionario ni textos de salida.
+- No toques tests/ ni pyproject.toml.
+- Meta de ruff tras este paso: deben desaparecer N802 y N816 (quedarán unos 10 errores de otras categorías).
+
+Primero lista el mapa de renombres (viejo -> nuevo) y los usos encontrados; después aplícalo,
+ejecuta pytest y ruff check src y muéstrame resultados y diff.
+```
+
+**Cambio realizado** (4 archivos, 145 inserciones / 128 eliminaciones, solo nombres y saltos de línea):
+- Símbolos: `hacer_cosa → formatear_dinero`, `contadorVentas → contador_ventas`, `hayArchivo → hay_archivo`
+  (renombrados a la vez en `gestor.py`, `almacen.py`, `reportes.py` y `main.py`).
+- Locales: `x → producto`, `aux → nuevo_stock / subtotal / valor_total / unidades_por_codigo`,
+  `desc → descuento`, `temp2 → coincidencias / productos_bajos / producto / texto`, `d → datos`,
+  `f → archivo`, `k → codigo`, `v → venta`, `s → reporte / resumen`, `t → total / anterior`,
+  `op → opcion`, `c/n/p/s → codigo/nombre/precio/stock`, `cli → cliente`, `cant → cantidad`.
+- Por la longitud de los nombres se partieron algunas líneas (diccionario `montos`, `print("OJO:", ...)`,
+  concatenaciones largas en los reportes) para respetar el límite de 88 caracteres (E501).
+
+**Justificación:** los nombres de una letra y `temp2`/`aux` (que significaba 3 cosas distintas) obligaban
+a leer el cuerpo para entender qué contenían; ahora el código se lee sin comentarios. Se unifica el
+estilo a `snake_case` (PEP 8) y desaparecen los errores N802 y N816 de ruff. Se respetaron los
+nombres que usan los tests y `ultimo_error`, que `main.py` lee desde `gestor`.
+
+**Verificación:** `grep` ya no encuentra `hacer_cosa`, `contadorVentas`, `hayArchivo`, `temp2` ni `aux` en
+`src/`; `tests/`, `pyproject.toml` y `datos_ejemplo.json` sin cambios. Como `main.py` no tiene tests,
+ejecuté el **menú completo con una sesión simulada** (196 líneas de salida: alta de productos
+con error de duplicado y entrada no numérica, ventas con y sin cliente VIP, stock insuficiente, producto
+inexistente, cotización, reportes de inventario/ventas, más vendidos, alertas y guardado) contra la versión
+del commit anterior: **salida idéntica y JSON guardado idéntico** (sin la fecha)
+([`R4_menu_entrada.txt`](evidencia/R4_menu_entrada.txt), [`R4_menu_salida.txt`](evidencia/R4_menu_salida.txt)).
+
+**Resultado de los tests:** `pytest` → **20 passed** ([`R4_pytest.txt`](evidencia/R4_pytest.txt)).
+`ruff check src` → **10 errores** (antes 12; desaparecen N802 y N816)
+([`R4_ruff_resumen.txt`](evidencia/R4_ruff_resumen.txt)).
+
+**Observaciones:** el prompt pedía "primero lista el mapa de renombres", pero Claude lo resumió en una
+línea y aplicó directamente (la captura de progreso lo muestra); funcionó porque las reglas de
+exclusión eran explícitas, pero para renombres masivos conviene pedir el mapa como paso aparte y
+aprobarlo. Además corrigió solo una línea de 97 caracteres (E501) que sus propios renombres provocaron.
