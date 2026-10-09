@@ -1,8 +1,8 @@
 # Bitácora de refactorización
 
-**Nombre:**
-**Matrícula:**
-**Fecha:**
+**Nombre:Anabelle Denisse Dueñas Sánchez de Tagle**
+**Matrícula:NextGencoding**
+**Fecha:08Octubre2026**
 
 Registra aquí **cada refactorización** que realices con Claude Code. Copia el
 prompt tal cual lo escribiste (o un resumen fiel si fue una conversación larga),
