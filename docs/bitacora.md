@@ -24,6 +24,7 @@ están en [`evidencia/`](evidencia/).
 | R3 | `registrar_venta`: guard clauses y extracción de `_validar_venta`, `_crear_venta`, `_armar_ticket` | Simplificar condicionales / extraer funciones | 20 passed | 12 errores (±0) |
 | R4 | Renombrar símbolos y variables sin significado (snake_case, nombres descriptivos) | Renombrar | 20 passed | 10 errores (−2) |
 | R5 | `almacen.py`: `with open`, excepción específica, `update`/`extend`, type hints | Mejorar manejo de errores | 20 passed | 6 errores (−4) |
+| R6 | `reportes.py`: `sorted`, `sum`, comprehension y type hints | Simplificar / type hints | 20 passed | 6 errores (±0) |
 
 ---
 
@@ -347,3 +348,77 @@ y C901 de `menu`) ([`R5_ruff_resumen.txt`](evidencia/R5_ruff_resumen.txt)).
 ya no atrapa; intenté reproducirlo con un JSON anidado 100 000 niveles y en este Python ambas versiones se
 comportan igual (el JSON se carga), por lo que no es un cambio observable aquí. Como en R2, el modo de la
 barra al terminar fue `auto mode on` tras aprobar el plan.
+
+---
+
+## R6 — `reportes.py`: `sorted`, `sum`, comprehension y type hints
+
+**Modo de Claude Code:** accept edits, con plan de 5 líneas en el texto y verificación de equivalencia
+escrita por la propia IA (no se generó archivo de plan).
+**Capturas:** [prompt](evidencia/R6_prompt.png) · [progreso](evidencia/R6_progreso.png) · [resultado](evidencia/R6_resultado.png)
+
+**Prompt usado:**
+
+```
+Refactorización 6 de 7 (categoría: simplificar código / type hints). Lee CLAUDE.md y respétalo.
+
+Contexto: en src/reportes.py, mas_vendidos usa un ordenamiento de burbuja manual y un acumulador
+manual (con un TODO que pide usar sorted); total_vendido y productos_stock_bajo usan bucles
+acumuladores; ninguna función tiene type hints.
+
+Tarea (solo reportes.py):
+1. mas_vendidos: reemplaza la burbuja por sorted(..., key=..., reverse=True) y simplifica el
+   acumulador de unidades por código; elimina el comentario TODO obsoleto.
+2. total_vendido: usa sum(...) sobre los totales; productos_stock_bajo: comprehension.
+3. Agrega type hints y docstrings breves a todas las funciones de reportes.py.
+4. En reporte_inventario y resumen_ventas solo simplifica si el texto resultante es IDÉNTICO
+   (siguen haciendo print y return del mismo texto).
+
+Restricciones críticas (comportamiento idéntico):
+- mas_vendidos: orden descendente por unidades y, en empates, orden de PRIMERA aparición
+  (sorted con reverse=True conserva el orden relativo de los empates). Mismo comportamiento
+  para n=0 o n mayor que el número de productos.
+- total_vendido: misma suma de floats en el mismo orden, sum empezando en 0 entero, y round(..., 2).
+- formatear_dinero sigue siendo "$" + str(round(valor, 2)) (sin forzar dos decimales).
+- No cambies formatos de texto ni nombres públicos usados por main.py y los tests.
+- No toques tests/ ni pyproject.toml.
+- Meta de ruff tras este paso: se mantienen 6 errores (4x UP009, I001, C901 de menu); no deben aparecer nuevos.
+
+Primero escribe un plan de 5 líneas. Luego aplica el cambio y verifica la equivalencia con la
+versión anterior: crea en el scratchpad (fuera del repo) un script que compare las funciones de
+reportes.py con git show HEAD:src/reportes.py usando varios inventarios y ventas, incluyendo
+empates en unidades y ventas vacías. Ejecuta también pytest y ruff check src y muéstrame
+resultados y diff.
+```
+
+**Cambio realizado** (`src/reportes.py`):
+- `mas_vendidos`: acumulador con `dict.get(codigo, 0)` y `sorted(..., reverse=True)` en lugar de la burbuja;
+  se elimina el `TODO` (la función pasa de ~20 a ~10 líneas).
+- `total_vendido`: `round(sum(...), 2)`; `productos_stock_bajo`: comprehension sobre `INVENTARIO.values()`.
+- Type hints y docstrings en todas las funciones (alias `Producto = dict[str, Any]`).
+- `reporte_inventario` y `resumen_ventas`: solo type hints (se dejaron sin pasar a f-strings a propósito).
+
+**Justificación:** `sorted` es O(n log n) frente al O(n²) de la burbuja, es la forma idiomática y elimina
+el `TODO` que admitía la deuda; `sum` y la comprehension expresan la intención sin variables acumuladoras
+auxiliares. Los type hints documentan el contrato de cada función. El orden de los empates se conserva
+porque la burbuja con `<` estricto es estable y `sorted(..., reverse=True)` también lo es.
+
+**Decisión de la IA que acepto:** Claude no convirtió los reportes a f-strings porque con valores que no son
+`str` cambiaría el comportamiento (`"a" + 5` lanza `TypeError`; un f-string no). Es el tipo de cambio "estético"
+que habría alterado la semántica; el prompt ya pedía "solo si es idéntico" y la IA lo aplicó con criterio.
+
+**Verificación:** el script de equivalencia que Claude escribió en su sesión comparó retorno y texto impreso
+de las 5 funciones y `formatear_dinero` contra `git show HEAD:src/reportes.py`: **4545 comparaciones idénticas**
+(inventario y ventas vacíos, empates en unidades con distinto orden de primera aparición, 300 escenarios
+aleatorios, `mas_vendidos` con n = 0, 1, 2, 100 y −1). Yo verifiqué que `reportes_anterior.py` era exactamente
+el de `HEAD`, leí el script y lo ejecuté de forma independiente con el mismo resultado
+([`R6_equivalencia.py`](evidencia/R6_equivalencia.py), [`R6_equivalencia.txt`](evidencia/R6_equivalencia.txt)).
+`tests/` y `pyproject.toml` sin cambios.
+
+**Resultado de los tests:** `pytest` → **20 passed** ([`R6_pytest.txt`](evidencia/R6_pytest.txt)).
+`ruff check src` → **6 errores**, sin cambio ni errores nuevos ([`R6_ruff_resumen.txt`](evidencia/R6_ruff_resumen.txt)).
+
+**Observaciones:** pedir en el prompt que la IA escriba y ejecute su propia verificación contra la versión
+anterior dio la evidencia más fuerte hasta ahora con el menor esfuerzo; conviene hacerlo siempre que no haya
+tests que cubran el comportamiento. Aun así revisé el script y lo corrí por mi cuenta: la IA puede escribir una
+verificación que no pruebe lo que debe.

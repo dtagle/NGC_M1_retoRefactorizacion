@@ -1,24 +1,28 @@
 # -*- coding: utf-8 -*-
 """Reportes de la tienda: inventario, ventas y mas vendidos."""
 
+from typing import Any
+
 import gestor
 
+Producto = dict[str, Any]
 
-def formatear_dinero(valor):
-    # le da formato de dinero al numero
+
+def formatear_dinero(valor: float) -> str:
+    """Da formato de dinero al valor, redondeado a dos decimales."""
     return "$" + str(round(valor, 2))
 
 
-def productos_stock_bajo():
+def productos_stock_bajo() -> list[Producto]:
     """Regresa la lista de productos con stock por debajo del minimo."""
-    productos_bajos = []
-    for codigo in gestor.INVENTARIO:
-        if gestor.INVENTARIO[codigo]["stock"] < gestor.STOCK_MINIMO:
-            productos_bajos.append(gestor.INVENTARIO[codigo])
-    return productos_bajos
+    return [
+        producto
+        for producto in gestor.INVENTARIO.values()
+        if producto["stock"] < gestor.STOCK_MINIMO
+    ]
 
 
-def reporte_inventario():
+def reporte_inventario() -> str:
     """Arma el reporte del inventario, lo imprime y lo regresa como texto."""
     reporte = "===== INVENTARIO =====\n"
     valor_total = 0
@@ -37,39 +41,26 @@ def reporte_inventario():
     return reporte
 
 
-def total_vendido():
+def total_vendido() -> float:
     """Suma el total (con IVA) de todas las ventas registradas."""
-    total = 0
-    for venta in gestor.VENTAS:
-        total = total + venta["total"]
-    return round(total, 2)
+    return round(sum(venta["total"] for venta in gestor.VENTAS), 2)
 
 
-def mas_vendidos(n=3):
+def mas_vendidos(n: int = 3) -> list[tuple[str, int]]:
     """Regresa los n productos mas vendidos como lista de (codigo, unidades)."""
-    unidades_por_codigo = {}
+    unidades_por_codigo: dict[str, int] = {}
     for venta in gestor.VENTAS:
         codigo = venta["codigo"]
-        if codigo in unidades_por_codigo:
-            unidades_por_codigo[codigo] = (
-                unidades_por_codigo[codigo] + venta["cantidad"]
-            )
-        else:
-            unidades_por_codigo[codigo] = venta["cantidad"]
-    ranking = []
-    for codigo in unidades_por_codigo:
-        ranking.append((codigo, unidades_por_codigo[codigo]))
-    # ordenamiento de burbuja (TODO: algun dia usar sorted)
-    for i in range(len(ranking)):
-        for j in range(0, len(ranking) - i - 1):
-            if ranking[j][1] < ranking[j + 1][1]:
-                anterior = ranking[j]
-                ranking[j] = ranking[j + 1]
-                ranking[j + 1] = anterior
+        unidades_por_codigo[codigo] = (
+            unidades_por_codigo.get(codigo, 0) + venta["cantidad"]
+        )
+    ranking = sorted(
+        unidades_por_codigo.items(), key=lambda par: par[1], reverse=True
+    )
     return ranking[0:n]
 
 
-def resumen_ventas():
+def resumen_ventas() -> str:
     """Arma el resumen de ventas del dia, lo imprime y lo regresa."""
     resumen = "===== RESUMEN DE VENTAS =====\n"
     total = 0
