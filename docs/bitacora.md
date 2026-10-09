@@ -26,6 +26,7 @@ están en [`evidencia/`](evidencia/).
 | R5 | `almacen.py`: `with open`, excepción específica, `update`/`extend`, type hints | Mejorar manejo de errores | 20 passed | 6 errores (−4) |
 | R6 | `reportes.py`: `sorted`, `sum`, comprehension y type hints | Simplificar / type hints | 20 passed | 6 errores (±0) |
 | R7 | `main.py`: `menu()` dividido en un handler por opción + despacho por diccionario | Extraer funciones / type hints | 20 passed | 5 errores (−1) |
+| — | Limpieza final con `ruff check src --fix` (cabecera `coding` obsoleta y orden de imports) | Linter automático | 20 passed | **0 errores** (−5) |
 
 ---
 
@@ -511,3 +512,41 @@ repetirla de forma independiente; el fallo de alineación del primer script de C
 que las verificaciones con entrada simulada también pueden estar mal construidas y hay que comprobar que
 realmente recorrieron lo que decían recorrer (aquí: contar `Opcion no valida`, `Eso no es un numero` y
 `Descuento` en la salida).
+
+---
+
+## Limpieza final — `ruff check src --fix`
+
+No es una de las 7 refactorizaciones: son los 5 errores restantes, todos mecánicos y autocorregibles por el propio
+linter. Se aplicó `ruff check src --fix` y se revisó el diff: se elimina la cabecera `# -*- coding: utf-8 -*-`
+en los 4 módulos (UP009; innecesaria en Python 3) y se reordenan los imports de `main.py` (I001). Sin cambios
+de lógica. Resultado: `ruff check src` → **All checks passed!** ([`99_final_ruff.txt`](evidencia/99_final_ruff.txt));
+`pytest -v` → **20 passed** ([`99_final_pytest.txt`](evidencia/99_final_pytest.txt)).
+
+---
+
+## Resultado global
+
+| Métrica | Original (`7d67b8b`) | Final |
+|---|---|---|
+| Errores de `ruff check src` | 20 | **0** |
+| Tests (`pytest`) | 20 passed | 20 passed (en cada uno de los 8 commits de código) |
+| Complejidad máxima (C901) | `menu` 17, `registrar_venta` 12 | **5** (`menu`, `agregarProducto`, `_validar_venta`) |
+| Líneas en `src/` | 429 | 483 (más docstrings, type hints, constantes y funciones pequeñas) |
+| Código muerto | 5 elementos | 0 |
+| Números mágicos del negocio | 8 | 0 (constantes con nombre) |
+| Estilos de nombres mezclados | `contadorVentas`, `hayArchivo`, `hacer_cosa`, `temp2`, `aux`... | `snake_case` descriptivo |
+
+**Validación de que el comportamiento no cambió:** el programa final se ejecutó con la sesión simulada de 44
+entradas (las 8 opciones del menú, producto duplicado, entrada no numérica, opción inválida, producto inexistente,
+stock insuficiente, ventas con y sin cliente VIP) y produjo una **salida de 196 líneas idéntica a la del código
+original del reto, y el mismo JSON guardado** (sin la fecha)
+([`99_final_comparacion_original.txt`](evidencia/99_final_comparacion_original.txt),
+[`99_final_menu_salida.txt`](evidencia/99_final_menu_salida.txt)). `tests/` y `pyproject.toml` no se modificaron
+en ningún commit.
+
+**Hallazgos del diagnóstico que se dejaron sin corregir a propósito** (cambiarían el comportamiento observable;
+quedan como mejoras futuras con sus propios tests): cotización sin descuento VIP y validaciones distintas a las
+de la venta (#25); mensaje "Datos cargados" aunque la carga falle (#23); truncado de decimales en
+`int(pedir_numero(...))` (#22); `KeyError` si faltan claves en el JSON; estado global (`INVENTARIO`, `VENTAS`,
+`ultimo_error`, `contador_ventas`), que no se eliminó para no alterar la API que usan los tests.

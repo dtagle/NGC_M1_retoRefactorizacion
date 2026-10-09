@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """Punto de entrada del gestor de tienda (menu interactivo en consola)."""
 
 from collections.abc import Callable
 
-import gestor
 import almacen
+import gestor
 import reportes
 
 ARCHIVO = "datos_ejemplo.json"

@@ -1,0 +1,10 @@
+Comparacion del programa FINAL contra el codigo ORIGINAL del reto (commit 7d67b8b)
+Entrada simulada: docs/evidencia/R4_menu_entrada.txt (8 opciones, duplicado, entrada no numerica, opcion invalida, VIP, inexistente)
+Salida: IDENTICA (196 lineas); JSON guardado: IDENTICO (sin fecha)
+
+Complejidad ciclomatica (ruff C901, funciones mas complejas)
+  original: menu 17, registrar_venta 12, mas_vendidos 7, cotizar 5
+  final:    menu 5, agregarProducto 5, _validar_venta 5, reporte_inventario 3
+
+Lineas en src/: original 429 -> final 483 (suben por docstrings, type hints, constantes y funciones auxiliares)
+ruff check src: original 20 errores -> final 0
